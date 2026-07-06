@@ -23,15 +23,27 @@ def get_polar_gyroid(res, freq_r, freq_t, z_scale):
             np.sin(freq_t * theta) * np.cos(Z * z_scale)
     return X, Y, Z, field
 
-def get_sphere(res, radius):
+def get_modulated_sphere(res, radius, freq_r, freq_t, z_scale):
     # Create coordinate grid
     x = np.linspace(-3, 3, res)
     y = np.linspace(-3, 3, res)
     z = np.linspace(-2, 2, res)
     X, Y, Z = np.meshgrid(x, y, z)
 
-    # Sphere equation
-    field = X**2 + Y**2 + Z**2 - radius**2
+    # Base sphere field
+    sphere_field = X**2 + Y**2 + Z**2 - radius**2
+
+    # Polar coordinates for modulation
+    r_polar = np.sqrt(X**2 + Y**2)
+    theta = np.arctan2(Y, X)
+
+    # Modulation field (similar to gyroid)
+    modulation_field = np.sin(freq_r * r_polar) * np.cos(freq_t * theta) + \
+                       np.sin(freq_t * theta) * np.cos(Z * z_scale)
+
+    # Combine the fields by adding the modulation to the sphere
+    # The '0.5' factor scales the modulation effect
+    field = sphere_field + 0.5 * modulation_field
     return X, Y, Z, field
 
 # --- STL Conversion ---
@@ -59,18 +71,20 @@ st.sidebar.header("Parameters")
 
 shape = st.sidebar.selectbox("Shape", ["Gyroid", "Sphere"])
 
+# Common parameters for both shapes
+freq_r = st.sidebar.slider("Radial Frequency", 1.0, 10.0, 3.0)
+freq_t = st.sidebar.slider("Angular Frequency", 1, 10, 5)
+z_scale = st.sidebar.slider("Vertical Scale", 0.1, 5.0, 1.0)
+
 res = 40  # Keep low for web performance
 
 if shape == "Gyroid":
-    freq_r = st.sidebar.slider("Radial Frequency", 1.0, 10.0, 3.0)
-    freq_t = st.sidebar.slider("Angular Frequency", 1, 10, 5)
-    z_scale = st.sidebar.slider("Vertical Scale", 0.1, 5.0, 1.0)
     X, Y, Z, field = get_polar_gyroid(res, freq_r, freq_t, z_scale)
     isomin, isomax = -0.5, 0.5
     stl_level = 0
 elif shape == "Sphere":
     radius = st.sidebar.slider("Radius", 0.5, 2.5, 1.5)
-    X, Y, Z, field = get_sphere(res, radius)
+    X, Y, Z, field = get_modulated_sphere(res, radius, freq_r, freq_t, z_scale)
     isomin, isomax = -0.1, 0.1 # A thin shell around the surface
     stl_level = 0
 
