@@ -50,7 +50,7 @@ def create_stl_file(field, level=0):
 
     # Save mesh to a binary buffer
     with io.BytesIO() as buffer:
-        stl_mesh.save('', buffer)
+        stl_mesh.save('streamlit_mesh', buffer)
         return buffer.getvalue()
 
 # --- Streamlit Interface ---
